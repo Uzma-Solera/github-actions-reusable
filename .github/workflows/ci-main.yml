@@ -1,0 +1,101 @@
+name: Common CI
+on:
+  workflow_call:
+    inputs:
+      component_name:
+        required: true
+        type: string
+      app_type:
+        required: true
+        type: string
+
+jobs:
+  Download-dependencies-build:
+    runs-on: self-hosted
+    steps:
+      - name: checkout repo code
+        uses: actions/checkout@v4
+      - run: |
+          if [ ${{ inputs.app_type }} == nodejs ]; then
+            npm install
+          elif [ ${{ inputs.app_type }} == maven ]; then
+            mvn package
+          fi
+          docker build -t 183295444327.dkr.ecr.us-east-1.amazonaws.com/${{ inputs.component_name }}:${GITHUB_SHA}
+
+  Docker-push:
+    runs-on: self-hosted
+    needs: Download-dependencies-build
+    steps:
+      - name: checkout repo code
+        uses: actions/checkout@v4
+        run: |
+          export PATH=/home/github/.local/bin:/home/github/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 183295444327.dkr.ecr.us-east-1.amazonaws.com
+          docker push 183295444327.dkr.ecr.us-east-1.amazonaws.com/${{ inputs.component_name }}:${GITHUB_SHA}   
+
+  Dev-deployment:
+    runs-on: self-hosted
+    needs: Docker-push
+    steps:
+      - name: checkout repo code
+        uses: actions/checkout@v4
+        with:
+          repository: https://github.com/Uzma-Solera/roboshop-helm.git
+      - name: Deploy
+        run: |
+          export PATH=/home/github/.local/bin:/home/github/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+          #aws eks update-kubeconfig --name dev
+          #make component=${{ inputs.component_name }} env=dev
+            
+
+  QA-deployment:
+    runs-on: self-hosted
+    needs: Dev-deployment
+    steps:
+      - name: checkout repo code
+        uses: actions/checkout@v4
+      - name: Deploy
+        run: |
+          export PATH=/home/github/.local/bin:/home/github/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+          #aws eks update-kubeconfig --name dev
+          #make component=${{ inputs.component_name }} env=qa
+
+  UAT-deployment:
+    runs-on: self-hosted
+    needs: QA-deployment
+    steps:
+      - name: checkout repo code
+        uses: actions/checkout@v4
+      - name: Deploy
+        run: |
+          export PATH=/home/github/.local/bin:/home/github/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+          #aws eks update-kubeconfig --name dev
+          #make component=${{ inputs.component_name }} env=uat
+
+  PROD-deployment:
+    runs-on: self-hosted
+    needs: UAT-deployment
+    steps:
+      - name: checkout repo code
+        uses: actions/checkout@v4
+      - name: Deploy
+        run: |
+          export PATH=/home/github/.local/bin:/home/github/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+          #aws eks update-kubeconfig --name dev
+          #make component=${{ inputs.component_name }} env=prod
+            
+          
+      
+        
+      
+            
+            
+      
+            
+
+
+
+
+        
+    
