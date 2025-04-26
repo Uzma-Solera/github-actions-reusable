@@ -1,0 +1,36 @@
+name: Common CI
+on:
+  workflow_call:
+    inputs:
+      component_name:
+        required: true
+        type: string
+      app_type:
+        required: true
+        type: string
+
+jobs:
+  Download-dependencies:
+    runs-on: self-hosted
+    steps:
+      - name: checkout repo code
+        uses: actions/checkout@v4
+      - name: Download dependencies
+        run: |
+          if [ ${{ inputs.app_type }} == nodejs ]; then
+            npm install
+          elif [ ${{ inputs.app_type }} == maven ]; then
+            mvn package
+          fi
+  
+
+  Test:
+    runs-on: self-hosted
+    needs: Download-dependencies
+    steps:
+      - name: checkout repo code
+        uses: actions/checkout@v4
+      - name: Unit Test
+        run: echo Unit Tests
+      - name: Integration Tests
+        run: echo Integration Tests
